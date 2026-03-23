@@ -1,35 +1,48 @@
+import os
 import json
 from dotenv import load_dotenv
 from openai import OpenAI
 from agent.tools import save_memory
 from agent.tools import TOOLS
+import streamlit as st
 
 
 load_dotenv()
 
+MODEL = "grok-3-fast"
+
 def agent(messages):
 
-    # Initialize the OpenAI client
-    client = OpenAI()
+    client = OpenAI(
+        api_key=os.getenv("XAI_API_KEY"),
+        base_url="https://api.x.ai/v1",
+    )
 
-    # Make a ChatGPT API call with tool calling
     completion = client.chat.completions.create(
-        model="gpt-4o-mini",
-        tools=TOOLS, # here we pass the tools to the LLM
+        model=MODEL,
+        tools=TOOLS,
         messages=messages
     )
 
-    # Get the response from the LLM
     response = completion.choices[0].message
 
-    # Parse the response to get the tool call arguments
     if response.tool_calls:
-        # Process each tool call
         for tool_call in response.tool_calls:
-            # Get the tool call arguments
             tool_call_arguments = json.loads(tool_call.function.arguments)
             if tool_call.function.name == "save_memory":
-                return save_memory(tool_call_arguments["memories"])
+                response = save_memory(tool_call_arguments["memories"])
+
+                # Uncomment this to see the memory tool calls
+                messages.append({"role": "assistant", "content": response})
+                st.chat_message("assistant").write(response)
+                
+                completion = client.chat.completions.create(
+                    model=MODEL,
+                    messages=messages
+                )
+                response = completion.choices[0].message
+
+                return response.content
+
     else:
-        # If there are no tool calls, return the response content
         return response.content

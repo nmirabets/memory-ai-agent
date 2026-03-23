@@ -66,22 +66,16 @@ def save_memory(memories):
         vector = get_embeddings(memory)
         # Step 2: Build the vector document to be stored
         user_id = "1234"
-        path = "user/{user_id}/recall/{event_id}"
         current_time = datetime.now(tz=timezone.utc)
-        path = path.format(
-            user_id=user_id,
-            event_id=str(uuid.uuid4()),
-        )
+
         documents = [
             {
                 "id": str(uuid.uuid4()),
                 "values": vector,
                 "metadata": {
-                    "payload": memory,
-                    "path": path,
-                    "timestamp": str(current_time),
-                    "type": "recall", # Define the type of document i.e recall memory
                     "user_id": user_id,
+                    "timestamp": str(current_time),
+                    "payload": memory,
                 },
             }
         ]
@@ -94,13 +88,12 @@ def save_memory(memories):
 
 def load_memories(prompt):
     user_id = "1234"
-    top_k = 10
+    top_k = 2
     vector = get_embeddings(prompt)
     response = index.query(
         vector=vector,
         filter={
             "user_id": {"$eq": user_id},
-            "type": {"$eq": "recall"},
         },
         namespace=os.getenv("PINECONE_NAMESPACE"),
         include_metadata=True,
@@ -109,5 +102,5 @@ def load_memories(prompt):
     memories = []
     if matches := response.get("matches"):
         memories = [m["metadata"]["payload"] for m in matches]
-        memories
+
     return memories
