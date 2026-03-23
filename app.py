@@ -29,7 +29,7 @@ if "messages" not in st.session_state:
 ########################################################
 # 4. Display the conversation history
 ########################################################
-for msg in st.session_state.messages[1:]:
+for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
 ########################################################

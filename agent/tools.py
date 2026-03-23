@@ -20,20 +20,6 @@ TOOLS = [
     {
         "type": "function",
         "function": {
-            "name": "get_weather",
-            "description": "Get the weather in a given location",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "location": {"type": "string"}
-                    },
-                    "required": ["location"]
-                },
-            },
-    },
-    {
-        "type": "function",
-        "function": {
             "name": "save_memory",
             "description": "Save a memory to the vector database",
             "parameters": {
@@ -56,7 +42,8 @@ TOOLS = [
 def get_embeddings(string_to_embed):
     response = client.embeddings.create(
         input=string_to_embed,
-        model="text-embedding-ada-002"
+        model=os.getenv("EMBEDDING_MODEL"),
+        dimensions=int(os.getenv("EMBEDDING_DIMENSIONS")),
     )
     return response.data[0].embedding
 
@@ -99,8 +86,4 @@ def load_memories(prompt):
         include_metadata=True,
         top_k=top_k,
     )
-    memories = []
-    if matches := response.get("matches"):
-        memories = [m["metadata"]["payload"] for m in matches]
-
-    return memories
+    return [m["metadata"]["payload"] for m in response.get("matches", [])]
